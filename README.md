@@ -46,6 +46,18 @@ const res = await fetch("/api/ui-stream");
 The hook subscribes via `useSyncExternalStore`, re-rendering only when the parsed
 tree changes, and disposes the stream automatically on unmount.
 
+## Demo
+
+An interactive playground lives in [`demo/`](./demo). It streams sample JSX
+character-by-character and shows the raw text next to the live React tree, with a
+shimmer at the `<Pending />` frontier:
+
+```sh
+cd demo
+pnpm install
+pnpm dev
+```
+
 ## The core idea: a single frontier
 
 A stream is one linear sequence of characters, so at any instant there is exactly

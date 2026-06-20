@@ -1,0 +1,60 @@
+# jsx-incremental-parser — live demo
+
+An interactive playground for [`jsx-incremental-parser`](../). It streams a JSX
+string into the parser **a few characters at a time** (the way an LLM streams
+tokens) and renders the resulting **live React tree** side-by-side with the raw
+text. Everything that hasn't arrived yet is the single `<Pending />` frontier,
+shown here as a shimmer.
+
+The layout is two side-by-side panes: the **received stream** (raw text, growing
+with a blinking caret) on the left, and the **live React tree** it parses into on
+the right.
+
+## What it shows
+
+- **Incremental rendering** — settled subtrees stay put while only the open path
+  and the `<Pending />` shimmer update each chunk.
+- **The single frontier** — exactly one shimmer at a time, nested in the
+  innermost open element.
+- **Lenient parsing** — the "Malformed" sample omits close tags and uses an
+  unsupported `{ }` expression; the parser recovers and reports via `onError`
+  instead of throwing.
+- **Components as an allowlist** — only the components in
+  [`src/components.tsx`](./src/components.tsx) can be instantiated by the streamed
+  JSX; anything else degrades to `<Pending />`.
+
+## Run it
+
+The demo imports the library straight from `../src` via a Vite alias, so there's
+no build step — edits to the library show up live.
+
+```sh
+cd demo
+pnpm install
+pnpm dev
+```
+
+Then open the printed URL. Pick a sample (or edit the JSX), choose a speed, and
+press **Stream it**.
+
+## How it's wired
+
+```tsx
+import { useIncrementalJsx } from "jsx-incremental-parser/react";
+
+const node = useIncrementalJsx(stream, {
+  components: demoComponents,      // allowlist + renderers
+  Pending: Shimmer,               // frontier placeholder
+  onUnknownComponent: "pending",
+  onError: (err) => { /* surfaced in the UI */ },
+});
+```
+
+The streamed source is a `ReadableStream<Uint8Array>` built in
+[`src/streaming.ts`](./src/streaming.ts), which releases the text in small chunks
+on a timer and encodes to bytes — deliberately exercising the library's
+streaming `TextDecoder` path.
+
+> The demo intentionally does **not** wrap the tree in `<StrictMode>`: a stream
+> source is single-use, and StrictMode's dev double-invocation would consume it
+> before the real run. The library is StrictMode-safe given a *stable* source.
