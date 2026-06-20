@@ -75,6 +75,12 @@ on pushes to `master`.
    "Version Packages" PR that applies the pending changesets, bumps the version,
    and updates `CHANGELOG.md`.
 3. **Merging the "Version Packages" PR** publishes to npm (`changeset publish`,
-   public access, with provenance). Requires the `NPM_TOKEN` repo secret.
+   public access, with provenance).
+
+Publishing uses **npm trusted publishing (OIDC)** — no `NPM_TOKEN` secret. The
+workflow's `id-token: write` permission lets npm authenticate via OIDC. This
+requires a one-time setup on npmjs.com: configure the package's trusted
+publisher to this repo and the `release.yml` workflow. Provenance is generated
+automatically.
 
 Don't bump the version in `package.json` by hand — let Changesets do it.

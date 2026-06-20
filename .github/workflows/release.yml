@@ -30,7 +30,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Trusted publishing (OIDC) needs a recent npm; the runner's bundled npm
+      # may predate it. `changeset publish` shells out to `npm publish`.
+      - name: Ensure npm supports trusted publishing
+        run: npm install -g npm@latest
+
       # Opens/updates a "Version Packages" PR, or publishes when it is merged.
+      # Publishing authenticates via npm trusted publishing (OIDC) — no token —
+      # using the `id-token: write` permission above. Provenance is automatic.
       - name: Create Release PR or publish
         uses: changesets/action@v1
         with:
@@ -38,5 +45,3 @@ jobs:
           publish: pnpm run release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_CONFIG_PROVENANCE: "true"
