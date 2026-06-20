@@ -7,6 +7,6 @@
   // `index.html` so client-side routing / deep links don't 404.
   "assets": {
     "directory": "./dist",
-    "not_found_handling": "single-page-application"
-  }
+    "not_found_handling": "single-page-application",
+  },
 }
