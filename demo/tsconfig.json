@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noEmit": true,
+    "types": ["node"],
+    "paths": {
+      "jsx-incremental-parser/react": ["../src/react.ts"],
+      "jsx-incremental-parser/core": ["../src/core.ts"],
+      "jsx-incremental-parser": ["../src/index.ts"]
+    }
+  },
+  "include": ["src", "vite.config.ts"]
+}
