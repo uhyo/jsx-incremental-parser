@@ -17,7 +17,8 @@
 import { createElement, Fragment } from "react";
 import type { ComponentType, ReactNode } from "react";
 
-import type { ElementNode, Node, PropValue } from "./core";
+import { UNSUPPORTED_EXPRESSION } from "./core";
+import type { ElementNode, Node } from "./core";
 
 /** How to handle a component tag that cannot be resolved. */
 export type UnknownComponentBehavior = "pending" | "error" | "passthrough";
@@ -83,9 +84,12 @@ export function createRenderer(options: RenderOptions = {}): Renderer {
         return createElement(Fragment, { key: node.id }, ...node.children.map(renderNode));
       case "element":
         return createElementNode(node);
-      case "expression":
-        // Expression values become React children directly (Phase 5).
-        return node.value as ReactNode;
+      case "expression": {
+        const value = renderValue(node.value);
+        // A nested JSX value is re-keyed via a wrapper so the parent array key is
+        // this expression's (unique) id, not the nested node's local id.
+        return isNode(node.value) ? createElement(Fragment, { key: node.id }, value) : value;
+      }
     }
   }
 
@@ -96,7 +100,7 @@ export function createRenderer(options: RenderOptions = {}): Renderer {
 
     const props: Record<string, unknown> = { key: node.id };
     for (const [name, value] of Object.entries(node.props)) {
-      props[name] = mapPropValue(value);
+      props[name] = renderValue(value);
     }
     const children = node.children.map(renderNode);
     return resolved.kind === "host"
@@ -104,12 +108,17 @@ export function createRenderer(options: RenderOptions = {}): Renderer {
       : createElement(resolved.type as ComponentType<Record<string, unknown>>, props, ...children);
   }
 
-  function mapPropValue(value: PropValue): unknown {
-    if (value !== null && typeof value === "object" && "kind" in value) {
-      // A nested JSX element/fragment used as a prop value.
+  /** Resolve a prop value or expression value to a React-renderable value. */
+  function renderValue(value: unknown): ReactNode {
+    if (value === UNSUPPORTED_EXPRESSION) {
+      options.onError?.(new Error("Unsupported expression"), { phase: "expression" });
+      return null;
+    }
+    if (isNode(value)) {
+      // A nested JSX element/fragment used as a value.
       return renderNode(value);
     }
-    return value;
+    return value as ReactNode;
   }
 
   function resolveType(tag: string): Resolved {
@@ -132,6 +141,10 @@ export function createRenderer(options: RenderOptions = {}): Renderer {
   }
 
   return { render };
+}
+
+function isNode(value: unknown): value is Node {
+  return value !== null && typeof value === "object" && "kind" in value;
 }
 
 function isComponentName(tag: string): boolean {

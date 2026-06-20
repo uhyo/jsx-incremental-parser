@@ -12,8 +12,18 @@
  * open node, cloning only the open path so closed subtrees keep their identity.
  */
 
-import type { ElementNode, FragmentNode, Node, PendingNode, PropValue, TextNode } from "./core";
-import type { Partial, Token } from "./tokenizer";
+import type {
+  ElementNode,
+  ExpressionNode,
+  FragmentNode,
+  Node,
+  PendingNode,
+  PropValue,
+  TextNode,
+} from "./core";
+import { parseExpression } from "./expression";
+import type { AttrValue, Partial, Token } from "./tokenizer";
+import { Tokenizer } from "./tokenizer";
 
 /** A node that can still receive children (sits on the open stack). */
 type OpenNode = ElementNode | FragmentNode;
@@ -48,8 +58,7 @@ export class TreeBuilder {
       }
       case "attribute": {
         if (this.building) {
-          this.building.props[token.name] =
-            token.value.type === "string" ? token.value.value : true;
+          this.building.props[token.name] = this.attrToProp(token.value);
         }
         return;
       }
@@ -83,7 +92,44 @@ export class TreeBuilder {
         this.appendChild(freeze(node));
         return;
       }
+      case "expr": {
+        const value = parseExpression(token.raw, (src) => this.parseJsx(src));
+        const node: ExpressionNode = { kind: "expression", id: this.nextId++, value };
+        this.appendChild(freeze(node));
+        return;
+      }
     }
+  }
+
+  private attrToProp(value: AttrValue): PropValue {
+    switch (value.type) {
+      case "string":
+        return value.value;
+      case "boolean":
+        return true;
+      case "expression":
+        // The sentinel for an unsupported expression is detected by the adapter.
+        return parseExpression(value.raw, (src) => this.parseJsx(src)) as PropValue;
+    }
+  }
+
+  /** Parse a nested JSX expression by running a fresh, self-contained parse. */
+  private parseJsx(src: string): Node | undefined {
+    const tokenizer = new Tokenizer();
+    const builder = new TreeBuilder();
+    for (const token of tokenizer.write(src)) builder.push(token);
+    for (const token of tokenizer.end()) builder.push(token);
+    builder.end();
+    const nodes = builder.snapshot({ type: "none" });
+    if (nodes.length === 0) return undefined;
+    if (nodes.length === 1) return nodes[0];
+    const fragment: FragmentNode = {
+      kind: "fragment",
+      id: -2,
+      children: [...nodes],
+      status: "closed",
+    };
+    return freeze(fragment);
   }
 
   /**

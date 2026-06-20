@@ -54,6 +54,13 @@ export interface PendingNode {
 /** A resolved prop value (string literal, expression literal, or nested node). */
 export type PropValue = string | number | boolean | null | undefined | Node;
 
+/**
+ * Sentinel stored as an {@link ExpressionNode.value} (or {@link PropValue}) when
+ * an expression falls outside the supported subset (PLAN.md §2, §7). The React
+ * adapter renders it as nothing and reports it through `onError`.
+ */
+export const UNSUPPORTED_EXPRESSION: unique symbol = Symbol("unsupported-expression");
+
 export type Listener = () => void;
 export type Unsubscribe = () => void;
 
