@@ -37,6 +37,33 @@ pnpm dev
 Then open the printed URL. Pick a sample (or edit the JSX), choose a speed, and
 press **Stream it**.
 
+## Deploy (Cloudflare Workers)
+
+The demo is a fully static SPA, so it ships as an
+[assets-only Worker](https://developers.cloudflare.com/workers/static-assets/):
+Cloudflare serves the built `dist/` directly, with no Worker script. The config
+lives in [`wrangler.jsonc`](./wrangler.jsonc) (`not_found_handling:
+"single-page-application"` rewrites unknown paths to `index.html`).
+
+One-time auth (either works):
+
+```sh
+pnpm exec wrangler login            # interactive OAuth, or…
+export CLOUDFLARE_API_TOKEN=…       # token with "Edit Workers" permission
+```
+
+Then build + publish:
+
+```sh
+cd demo
+pnpm install
+pnpm deploy                         # = vite build && wrangler deploy
+```
+
+Wrangler prints the live URL (`https://jsx-incremental-parser-demo.<account>.workers.dev`).
+To preview the production build on the Workers runtime locally first, run
+`pnpm cf:preview` (`vite build && wrangler dev`).
+
 ## How it's wired
 
 ```tsx
