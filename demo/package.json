@@ -7,7 +7,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy": "vite build && wrangler deploy",
+    "cf:preview": "vite build && wrangler dev"
   },
   "dependencies": {
     "react": "19.2.7",
@@ -17,6 +19,7 @@
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
     "typescript": "6.0.3",
-    "vite": "8.0.16"
+    "vite": "8.0.16",
+    "wrangler": "4.103.0"
   }
 }
