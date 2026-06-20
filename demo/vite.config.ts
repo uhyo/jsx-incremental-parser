@@ -16,6 +16,12 @@ export default defineConfig({
       "jsx-incremental-parser/core": fromHere("../src/core.ts"),
       "jsx-incremental-parser": fromHere("../src/index.ts"),
     },
+    // The aliased library source (`../src`) imports `react`/`react-dom` too.
+    // Without deduping, the production build resolves those to a separate copy
+    // (e.g. the repo-root install) from the demo's own, so the page ships two
+    // React instances and hooks crash with "Cannot read properties of null
+    // (reading 'useMemo')". Force a single copy from the demo's deps.
+    dedupe: ["react", "react-dom"],
   },
   server: {
     // The library source lives outside the demo root (`../src`); allow the dev

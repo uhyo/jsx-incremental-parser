@@ -57,7 +57,7 @@ Then build + publish:
 ```sh
 cd demo
 pnpm install
-pnpm deploy                         # = vite build && wrangler deploy
+pnpm run deploy                     # = vite build && wrangler deploy
 ```
 
 Wrangler prints the live URL (`https://jsx-incremental-parser-demo.<account>.workers.dev`).
