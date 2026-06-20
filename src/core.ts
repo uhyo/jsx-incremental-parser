@@ -8,6 +8,12 @@
 
 import { Tokenizer } from "./tokenizer";
 import { TreeBuilder } from "./tree-builder";
+import type { TreeBuilderOptions } from "./tree-builder";
+
+export type { MismatchBehavior, ErrorReporter, TreeBuilderOptions } from "./tree-builder";
+
+/** Options for the low-level {@link createParser}. */
+export type ParserOptions = TreeBuilderOptions;
 
 /** A node in the renderer-independent AST. */
 export type Node = ElementNode | FragmentNode | TextNode | ExpressionNode | PendingNode;
@@ -84,9 +90,9 @@ export interface Parser {
  * processed chunk (PLAN.md §4.6); {@link Parser.getTree} returns a stable
  * reference until the next change, so it is safe with `useSyncExternalStore`.
  */
-export function createParser(): Parser {
+export function createParser(options: ParserOptions = {}): Parser {
   const tokenizer = new Tokenizer();
-  const builder = new TreeBuilder();
+  const builder = new TreeBuilder(options);
   const listeners = new Set<Listener>();
 
   let version = 0;

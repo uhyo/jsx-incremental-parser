@@ -10,7 +10,7 @@
 
 import type { ComponentType, ReactNode } from "react";
 
-import type { Node } from "./core";
+import type { MismatchBehavior, Node } from "./core";
 import { createParser } from "./core";
 import { createRenderer } from "./render";
 import type { JsxStreamSource } from "./stream";
@@ -24,6 +24,7 @@ export type {
   ExpressionNode,
   PendingNode,
   PropValue,
+  MismatchBehavior,
 } from "./core";
 export type { JsxStreamSource } from "./stream";
 export { Pending } from "./render";
@@ -40,7 +41,9 @@ export interface IncrementalJsxParserOptions {
   resolveComponent?: (name: string) => ComponentType<never> | undefined;
   /** Behavior for an unresolved component tag (default: "pending"). */
   onUnknownComponent?: UnknownComponentBehavior;
-  /** Called on a recoverable parse/stream error. */
+  /** Closing-tag mismatch strategy (default: "autoclose"). */
+  mismatchedTag?: MismatchBehavior;
+  /** Called on a recoverable parse/stream/render error. */
   onError?: (error: unknown, info: { phase: string }) => void;
 }
 
@@ -70,7 +73,7 @@ export function createIncrementalJsxParser(
   source: JsxStreamSource,
   options: IncrementalJsxParserOptions = {},
 ): IncrementalJsxParser {
-  const core = createParser();
+  const core = createParser({ mismatchedTag: options.mismatchedTag, onError: options.onError });
   const renderer = createRenderer(options);
 
   let lastTree: readonly Node[] | undefined;

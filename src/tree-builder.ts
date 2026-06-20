@@ -28,6 +28,19 @@ import { Tokenizer } from "./tokenizer";
 /** A node that can still receive children (sits on the open stack). */
 type OpenNode = ElementNode | FragmentNode;
 
+/** How to handle a closing tag that does not match the innermost open element. */
+export type MismatchBehavior = "autoclose" | "ignore" | "error";
+
+/** A recoverable-error reporter (shared with the React adapter's `onError`). */
+export type ErrorReporter = (error: unknown, info: { phase: string }) => void;
+
+export interface TreeBuilderOptions {
+  /** Closing-tag mismatch strategy (default: "autoclose"). */
+  mismatchedTag?: MismatchBehavior | undefined;
+  /** Called on a recoverable parse error. */
+  onError?: ErrorReporter | undefined;
+}
+
 /** The single frontier marker has a fixed key (only ever one exists at a time). */
 const PENDING_ID = -1;
 
@@ -38,6 +51,14 @@ interface Building {
 }
 
 export class TreeBuilder {
+  private readonly mismatchedTag: MismatchBehavior;
+  private readonly onError: ErrorReporter | undefined;
+
+  constructor(options: TreeBuilderOptions = {}) {
+    this.mismatchedTag = options.mismatchedTag ?? "autoclose";
+    this.onError = options.onError;
+  }
+
   private nextId = 0;
   /** Committed top-level nodes (append-only; the open path is mutated in place). */
   private readonly roots: Node[] = [];
@@ -82,7 +103,7 @@ export class TreeBuilder {
         return;
       }
       case "closeTag": {
-        this.closeTop();
+        this.closeTag(token.name);
         return;
       }
       case "text": {
@@ -179,6 +200,38 @@ export class TreeBuilder {
     };
   }
 
+  /**
+   * Handle a closing tag, honoring the {@link MismatchBehavior} when it does not
+   * match the innermost open element (PLAN.md §7).
+   */
+  private closeTag(name: string): void {
+    const stack = this.openStack;
+    if (stack.length === 0) return; // stray close with nothing open
+
+    const top = stack[stack.length - 1]!;
+    if (nodeName(top) === name) {
+      this.closeTop();
+      return;
+    }
+
+    // The innermost element does not match `name`.
+    switch (this.mismatchedTag) {
+      case "ignore":
+        return;
+      case "error":
+        this.onError?.(new Error(`Mismatched closing tag </${name}>`), { phase: "parse" });
+        return;
+      case "autoclose": {
+        // Close down to a matching ancestor if there is one; otherwise treat the
+        // mismatched tag as closing the innermost element (best-effort).
+        const matchIndex = findMatch(stack, name);
+        const target = matchIndex >= 0 ? matchIndex : stack.length - 1;
+        while (stack.length > target) this.closeTop();
+        return;
+      }
+    }
+  }
+
   /** Pop and freeze the innermost open node. */
   private closeTop(): void {
     const node = this.openStack.pop();
@@ -219,6 +272,18 @@ export class TreeBuilder {
     // stack[0] is the last committed root; replace it with the cloned path.
     return [...this.roots.slice(0, -1), child];
   }
+}
+
+function nodeName(node: OpenNode): string {
+  return node.kind === "fragment" ? "" : node.tag;
+}
+
+/** Index of the topmost open node matching `name`, or -1. */
+function findMatch(stack: readonly OpenNode[], name: string): number {
+  for (let i = stack.length - 1; i >= 0; i--) {
+    if (nodeName(stack[i]!) === name) return i;
+  }
+  return -1;
 }
 
 function cloneOpen(node: OpenNode, children: Node[]): OpenNode {
