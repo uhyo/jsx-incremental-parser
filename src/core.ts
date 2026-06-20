@@ -10,7 +10,7 @@
  */
 
 /** A node in the renderer-independent AST. */
-export type Node = ElementNode | FragmentNode | TextNode | ExpressionNode;
+export type Node = ElementNode | FragmentNode | TextNode | ExpressionNode | PendingNode;
 
 export interface ElementNode {
   kind: "element";
@@ -38,6 +38,17 @@ export interface ExpressionNode {
   kind: "expression";
   id: number;
   value: unknown;
+}
+
+/**
+ * The streaming frontier (PLAN.md §1). While the stream is open there is exactly
+ * one of these in the tree, placed at the cursor inside the innermost open
+ * element. It disappears once the stream ends. The React adapter renders it as
+ * the `<Pending />` component.
+ */
+export interface PendingNode {
+  kind: "pending";
+  id: number;
 }
 
 /** A resolved prop value (string literal, expression literal, or nested node). */
