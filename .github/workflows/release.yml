@@ -1,0 +1,47 @@
+name: Release
+
+on:
+  push:
+    branches: [master]
+
+concurrency: release-${{ github.ref }}
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Trusted publishing (OIDC) needs a recent npm; the runner's bundled npm
+      # may predate it. `changeset publish` shells out to `npm publish`.
+      - name: Ensure npm supports trusted publishing
+        run: npm install -g npm@latest
+
+      # Opens/updates a "Version Packages" PR, or publishes when it is merged.
+      # Publishing authenticates via npm trusted publishing (OIDC) — no token —
+      # using the `id-token: write` permission above. Provenance is automatic.
+      - name: Create Release PR or publish
+        uses: changesets/action@v1
+        with:
+          version: pnpm run version
+          publish: pnpm run release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
