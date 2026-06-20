@@ -289,7 +289,8 @@ versions"):
 | Test runner    | Vitest                              | 4.x      |
 | DOM env        | happy-dom                           | 20.x     |
 | React testing  | @testing-library/react             | 16.x     |
-| Lint + format  | Biome                               | 2.5.x    |
+| Linter         | oxlint (oxc)                        | 1.70.x   |
+| Formatter      | oxfmt (oxc)                         | 0.55.x   |
 | Publish checks | publint + @arethetypeswrong/cli     | 0.3 / 0.18|
 | React (peer)   | react / react-dom                   | ≥18, dev 19.x |
 
@@ -302,7 +303,7 @@ Notes:
   `./core` (framework‑agnostic). `sideEffects: false`.
 - `tsdown` chosen as the modern, fast, rolldown‑based successor to `tsup`;
   `tsup` 8.x is an acceptable fallback if tsdown causes friction.
-- **CI** (GitHub Actions): install (pnpm), `biome ci`, `tsc --noEmit`,
+- **CI** (GitHub Actions): install (pnpm), `oxlint` + `oxfmt --check`, `tsc --noEmit`,
   `vitest run`, build, `publint` + `attw` on the built package. A release
   workflow (e.g. Changesets) is added in the docs/release phase.
 - A **SessionStart hook** so Claude Code on the web can install deps and run
@@ -336,7 +337,7 @@ Coverage gate via Vitest's coverage in CI.
 
 ## 10. Phased build order
 
-- **Phase 0 — Scaffold.** pnpm workspace, TS 6 config, Biome, Vitest+happy-dom,
+- **Phase 0 — Scaffold.** pnpm workspace, TS 6 config, oxlint + oxfmt, Vitest+happy-dom,
   tsdown build, `exports` map, CI, SessionStart hook. _Exit: empty package
   builds, lints, tests run._
 - **Phase 1 — Incremental tokenizer.** Resumable state machine + token types +
